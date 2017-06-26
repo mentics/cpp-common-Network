@@ -8,13 +8,11 @@
 
 #include "GameServer.h"
 
+namespace mentics { namespace network {
+
 using namespace std;
 using namespace boost::asio;
 using boost::asio::ip::udp;
-
-
-namespace mentics {
-namespace network {
 
 struct Action {
 	string value;
@@ -34,7 +32,7 @@ void GameServer::start() {
 			log("GameServer unknown netio listen exception");
 		}
 	}
-	log("GameServer netio stopped");
+	log("GameServer stopped");
 }
 
 void GameServer::handleReceive(const boost::system::error_code& error, size_t numBytes) {
@@ -66,11 +64,11 @@ ClientInfo* GameServer::findClientInfo(udp::endpoint& endpoint, boost::array<byt
 	int clientId = *(uint32_t*)(in.data() + 1);
 	ClientInfo* info = clients[clientId];
 	if (info == NULL) {
-		log("received message for null client id: " + toString(clientId) + ", " + toString(endpoint));
+		log("Received message for null client info: " + toString(clientId) + ", " + toString(endpoint));
 		return NULL;
 	} else if (endpoint != clients[clientId]->clientEndpoint) {
 		// TODO
-		log("endpoint didn't match: " + toString(endpoint) + ", " + toString(endpoint));
+		log("Endpoint didn't match: " + toString(endpoint) + ", " + toString(clients[clientId]->clientEndpoint));
 		return NULL;
 	} else {
 		return clients[clientId];
@@ -87,7 +85,7 @@ void GameServer::handleSubscribe(udp::endpoint& endpoint) {
 			clients[i] = new ClientInfo(i, endpoint);
 			byte response[4];
 			writeClientId(i, response, 0);
-			log("Sending subscribe ack to " + toString(endpoint));
+			log("Sending subscribe ack to Client" + toString(i) + " at " + toString(endpoint));
 			send(clients[i]->clientEndpoint, cmdSubscribe, buffer(response, sizeof(ThatType)));
 			sendMessageAll("New client " + toString(i) + " joined from " + toString(endpoint), i);
 			return;
@@ -96,12 +94,12 @@ void GameServer::handleSubscribe(udp::endpoint& endpoint) {
 }
 
 void GameServer::handleMessage(ClientInfo& clientInfo, string message) {
-	log("Received from " + toString(clientInfo.clientEndpoint) + " clientId=" + toString(clientInfo.id) + ", message: " + message);
+	log("Received from Client" + toString(clientInfo.id) + " at " + toString(clientInfo.clientEndpoint) + ", message " + message);
 	sendMessageAll(message, clientInfo.id);
 }
 
 void GameServer::handleAction(ClientInfo& clientInfo, string action) {
-	log("Received message from " + toString(clientInfo.id) + "::" + toString(clientInfo.clientEndpoint) + ": " + action);
+	log("Received from Client" + toString(clientInfo.id) + " at " + toString(clientInfo.clientEndpoint) + " action " + action);
 	// TODO
 }
 
@@ -110,7 +108,7 @@ void GameServer::sendMessageAll(const string message, const ThatType clientId) {
 	for (int i = 0; i < clients.size(); i++) {
 		if (i != clientId && clients[i] != NULL) {
 			udp::endpoint& target = clients[i]->clientEndpoint;
-			log("Sending to " + toString(target) + " message: "+message);
+			log("Sending to Client" + toString(i) + " at " + toString(target) + " message: "+message);
 			send(target, cmdMessage, buffer(message));
 		}
 	}

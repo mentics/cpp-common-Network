@@ -14,11 +14,9 @@ enum Command { cmdSubscribe=1, cmdMessage=2, cmdAction=3 };
 
 namespace mentics { namespace network {
 
-using namespace std;
+void stdoutLog(std::string message);
 
-void stdoutLog(string message);
-
-extern void(*logger)(string);
+extern void(*logger)(std::string);
 
 template <typename T>
 inline std::string toString(const T& object) {

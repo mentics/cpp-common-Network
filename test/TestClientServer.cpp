@@ -7,6 +7,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 
+using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace mentics::network;
 
@@ -15,27 +16,71 @@ void log(std::string message) {
 }
 
 namespace mentics { namespace network {
-	void outputLog(std::string message) {
-		Logger::WriteMessage(message.c_str());
+
+void outputLog(std::string message) {
+	Logger::WriteMessage(message.c_str());
+}
+
+TEST_CLASS(ClientServerTest)
+{
+#define MAX_CLIENTS 10
+
+	int numClients;
+	GameServer* server;
+	thread* serverThread;
+	array<GameClient*, MAX_CLIENTS> clients;
+	array<thread*, MAX_CLIENTS> threads;
+
+	TEST_METHOD_INITIALIZE(before) {
 	}
 
-	TEST_CLASS(ClientServerTest)
-	{
-	public:
-		TEST_METHOD(TestClientServer)
-		{
-			logger = &outputLog;
-			GameServer server(1111);
-			GameClient client("localhost", 1111);
-			std::thread serverThread(&GameServer::start, &server);
-			std::thread clientThread(&GameClient::start, &client);
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			client.stop();
-			server.stop();
-			clientThread.join();
-			serverThread.join();
-		}
-	};
+	TEST_METHOD_CLEANUP(after) {
+		destroyClients();
+		destroyServer();
+	}
 
+	void createServer() {
+		server = new GameServer(1111);
+		serverThread = new thread(&GameServer::start, server);
+	}
+
+	void destroyServer() {
+		server->stop();
+		serverThread->join();
+		delete server;
+		delete serverThread;
+	}
+
+	void createClients(int num) {
+		numClients = num;
+		for (int i = 0; i < numClients; i++) {
+			clients[i] = new GameClient("localhost", 1111);
+			threads[i] = new thread(&GameClient::start, clients[i]);
+		}
+	}
+
+	void destroyClients() {
+		for (int i = 0; i < numClients; i++) {
+			clients[i]->stop();
+		}
+		for (int i = 0; i < numClients; i++) {
+			threads[i]->join();
+			delete clients[i];
+			delete threads[i];
+		}
+		//std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		//for (int i = 0; i < numClients; i++) {
+		//}
+	}
+
+public:
+	TEST_METHOD(TestClientServer)
+	{
+		logger = &outputLog;
+		createServer();
+		createClients(5);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+};
 
 }}

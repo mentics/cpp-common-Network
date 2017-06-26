@@ -6,11 +6,11 @@
 
 #include "GameClient.h"
 
+namespace mentics { namespace network {
+
 using namespace std;
 using namespace boost::asio;
 using boost::asio::ip::udp;
-
-namespace mentics { namespace network {
 
 void GameClient::start() {
 	log("Client starting...");
@@ -33,6 +33,7 @@ void GameClient::start() {
 			log("Unknown exception in client network thread");
 		}
 	}
+	log("GameClient stopped");
 }
 
 void GameClient::handleReceive(const boost::system::error_code& error, size_t numBytes) {
@@ -54,8 +55,8 @@ void GameClient::handleReceive(const boost::system::error_code& error, size_t nu
 	listen();
 }
 
-void GameClient::handleSubscribe(ThatType clientId) {
-	clientId = clientId;
+void GameClient::handleSubscribe(ThatType cid) {
+	clientId = cid;
 	name.append(toString(clientId));
 	log("Subscribe acknowledged with clientId=" + toString(clientId));
 }
@@ -65,12 +66,12 @@ void GameClient::handleMessage(string message) {
 }
 
 void GameClient::sendSubscribe() {
-	log("Sending subscribe to: " + toString(serverEndpoint));
+	log("Sending subscribe to server " + toString(serverEndpoint));
 	send(serverEndpoint, cmdSubscribe, buffer(this, 0));
 }
 
 void GameClient::sendMessage(string message) {
-	log("Sending to " + toString(serverEndpoint) + " message: "+message);
+	log("Sending to server " + toString(serverEndpoint) + " message: "+message);
 	send(serverEndpoint, cmdMessage, buffer(message));
 }
 

@@ -5,11 +5,11 @@
 
 #include "protocol.h"
 
+namespace mentics { namespace network {
+
 using namespace std;
 using namespace boost::asio;
 using boost::asio::ip::udp;
-
-namespace mentics { namespace network {
 
 class NetworkBase {
 public:

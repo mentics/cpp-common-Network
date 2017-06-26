@@ -10,7 +10,7 @@ int main()
 	{
 		mentics::network::GameServer server(1111);
 		server.start();
-		cout << "After run";
+		std::cout << "After run";
 	}
 	catch (std::exception& e)
 	{

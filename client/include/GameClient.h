@@ -4,10 +4,10 @@
 
 #include "NetworkBase.h"
 
+namespace mentics { namespace network {
+
 using namespace std;
 using boost::asio::ip::udp;
-
-namespace mentics { namespace network {
 
 class GameClient : public NetworkBase {
 public:
@@ -15,7 +15,8 @@ public:
 		NetworkBase("Client", 0), // port 0 will allow OS to choose port
 		clientId(-1),
 		serverHost(remoteHost), serverPort(remotePort)
-	{}
+	{
+	}
 
 	void start() override;
 
