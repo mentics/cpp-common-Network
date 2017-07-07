@@ -2,11 +2,12 @@
 
 #include <boost/bind.hpp>
 
+#include "MenticsCommon.h"
 #include "NetworkBase.h"
 
 namespace mentics { namespace network {
 
-using namespace std;
+namespace cmn = mentics::common;
 using namespace boost::asio;
 using boost::asio::ip::udp;
 
@@ -17,7 +18,7 @@ void NetworkBase::listen()
 		boost::bind(&NetworkBase::handleReceive, this,
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
-	log("Listening on port " + toString(socket.local_endpoint().port()));
+	log("Listening on port " + cmn::toString(socket.local_endpoint().port()));
 }
 
 template <typename ConstBufferSequence>

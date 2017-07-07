@@ -2,13 +2,13 @@
 
 #include <iostream>
 
-#include "GameServer.h"
+#include "NetworkServer.h"
 
 int main()
 {
 	try
 	{
-		mentics::network::GameServer server(1111);
+		mentics::network::NetworkServer server(1111);
 		server.start();
 		std::cout << "After run";
 	}

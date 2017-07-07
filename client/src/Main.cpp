@@ -2,13 +2,13 @@
 
 #include <iostream>
 
-#include "GameClient.h"
+#include "NetworkClient.h"
 
 int main(int argc, char* argv[])
 {
 	try
 	{
-		mentics::network::GameClient client("localhost", 1111);
+		mentics::network::NetworkClient client("localhost", 1111);
 		client.start();
 	}
 	catch (std::exception& e)

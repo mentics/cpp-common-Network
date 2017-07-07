@@ -4,8 +4,8 @@
 #include <thread>
 #include <chrono>
 
-#include "GameServer.h"
-#include "GameClient.h"
+#include "NetworkServer.h"
+#include "NetworkClient.h"
 
 using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -26,9 +26,9 @@ TEST_CLASS(ClientServerTest)
 #define MAX_CLIENTS 10
 
 	int numClients;
-	GameServer* server;
+	NetworkServer* server;
 	thread* serverThread;
-	array<GameClient*, MAX_CLIENTS> clients;
+	array<NetworkClient*, MAX_CLIENTS> clients;
 	array<thread*, MAX_CLIENTS> threads;
 
 	TEST_METHOD_INITIALIZE(before) {
@@ -40,8 +40,8 @@ TEST_CLASS(ClientServerTest)
 	}
 
 	void createServer() {
-		server = new GameServer(1111);
-		serverThread = new thread(&GameServer::start, server);
+		server = new NetworkServer(1111);
+		serverThread = new thread(&NetworkServer::start, server);
 	}
 
 	void destroyServer() {
@@ -54,8 +54,8 @@ TEST_CLASS(ClientServerTest)
 	void createClients(int num) {
 		numClients = num;
 		for (int i = 0; i < numClients; i++) {
-			clients[i] = new GameClient("localhost", 1111);
-			threads[i] = new thread(&GameClient::start, clients[i]);
+			clients[i] = new NetworkClient("localhost", 1111);
+			threads[i] = new thread(&NetworkClient::start, clients[i]);
 		}
 	}
 

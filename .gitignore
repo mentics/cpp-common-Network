@@ -2,5 +2,7 @@
 **/Debug
 ipch
 **/*.db
+**.*.user
 **/*.opendb
+**/*.filters
 .vs
