@@ -11,6 +11,8 @@ using namespace std;
 using namespace boost::asio;
 using boost::asio::ip::udp;
 
+//const const_buffer EMPTY_BUFFER = buffer(null, 0);
+
 class NetworkBase {
 public:
 	NetworkBase(string name, unsigned int localPort) :
