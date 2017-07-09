@@ -10,12 +10,12 @@
 namespace mentics { namespace network {
 
 namespace cmn = mentics::common;
-using namespace std;
-using namespace boost::asio;
+namespace lvl = boost::log::trivial;
+namespace asio = boost::asio;
 using boost::asio::ip::udp;
 
 void NetworkClient::start() {
-	log("Client starting...");
+	LOG(lvl::info) << "Client starting...";
 	udp::resolver resolver(netio);
 	udp::resolver::query query(udp::v4(), serverHost, std::to_string(serverPort));
 	serverEndpoint = *resolver.resolve(query);
@@ -29,13 +29,13 @@ void NetworkClient::start() {
 			netio.run();
 		}
 		catch (const std::exception& e) {
-			log("Client: network exception: " + cmn::toString(e.what()));
+			LOG(lvl::error) << "Client: network exception: " << cmn::toString(e.what());
 		}
 		catch (...) {
-			log("Unknown exception in client network thread");
+			LOG(lvl::error) << "Unknown exception in client network thread";
 		}
 	}
-	log("NetworkClient stopped");
+	LOG(lvl::info) << "NetworkClient stopped";
 }
 
 void NetworkClient::createGame(std::function<void(const GameInfo&)> callback) {
@@ -48,43 +48,43 @@ void NetworkClient::joinGame(GameIdType gameId) {
 
 
 void NetworkClient::sendSubscribe() {
-	log("Sending subscribe to server " + cmn::toString(serverEndpoint));
-	send(serverEndpoint, cmdSubscribe, buffer(this, 0));
+	LOG(lvl::trace) << "Sending subscribe to server " << cmn::toString(serverEndpoint);
+	send(serverEndpoint, cmdSubscribe, asio::buffer(this, 0));
 }
 
 void NetworkClient::sendWithId(Command cmd) {
 	byte response[4];
 	writeClientId(clientId, response, 0);
-	send(serverEndpoint, cmd, buffer(response, sizeof(clientId)));
+	send(serverEndpoint, cmd, asio::buffer(response, sizeof(clientId)));
 }
 
-void NetworkClient::sendWithId(Command cmd, const const_buffer& buffers) {
+void NetworkClient::sendWithId(Command cmd, const asio::const_buffer& buffers) {
 	byte response[4];
 	writeClientId(clientId, response, 0);
-	std::array<const_buffer, 2> bufs = { buffer(response, sizeof(clientId)), buffers };
+	std::array<asio::const_buffer, 2> bufs = { asio::buffer(response, sizeof(clientId)), buffers };
 	send(serverEndpoint, cmd, buffer(bufs));
 }
 
-void NetworkClient::sendMessage(string message) {
-	log("Sending to server " + cmn::toString(serverEndpoint) + " message: "+message);
-	send(serverEndpoint, cmdMessage, buffer(message));
+void NetworkClient::sendMessage(std::string message) {
+	LOG(lvl::trace) << "Sending to server " << cmn::toString(serverEndpoint) << " message: "+message;
+	send(serverEndpoint, cmdMessage, asio::buffer(message));
 }
 
 void NetworkClient::handleReceive(const boost::system::error_code& error, size_t numBytes) {
-	log("handleReceive received " + cmn::toString(numBytes));
+	LOG(lvl::trace) << "handleReceive received " << cmn::toString(numBytes);
 	byte firstValue = currentInput[0];
 	switch (firstValue) {
 	case cmdSubscribe:
 		handleSubscribe(readClientId(currentInput.data(), 1));
 		break;
 	case cmdMessage:
-		handleMessage(string(reinterpret_cast<char const*>(currentInput.data() + 1), numBytes - 1));
+		handleMessage(std::string(reinterpret_cast<char const*>(currentInput.data() + 1), numBytes - 1));
 		break;
 	case cmdAction:
-		log("action handler not implemented yet");
+		LOG(lvl::error) << "action handler not implemented yet";
 		break;
 	default:
-		log("unknown code received: " + cmn::toString((int)currentInput[0]));
+		LOG(lvl::error) << "unknown code received: " << cmn::toString((int)currentInput[0]);
 	}
 	listen();
 }
@@ -92,11 +92,11 @@ void NetworkClient::handleReceive(const boost::system::error_code& error, size_t
 void NetworkClient::handleSubscribe(ClientIdType cid) {
 	clientId = cid;
 	name.append(cmn::toString(clientId));
-	log("Subscribe acknowledged with clientId=" + cmn::toString(clientId));
+	LOG(lvl::info) << "Subscribe acknowledged with clientId=" << cmn::toString(clientId);
 }
 
-void NetworkClient::handleMessage(string message) {
-	log("Received message: " + message);
+void NetworkClient::handleMessage(std::string message) {
+	LOG(lvl::info) << "Received message: " << message;
 }
 
 }}

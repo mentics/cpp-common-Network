@@ -3,20 +3,20 @@
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 
+#include "MenticsCommon.h"
 #include "protocol.h"
 
 namespace mentics { namespace network {
 
-using namespace std;
-using namespace boost::asio;
+namespace cmn = mentics::common;
+namespace asio = boost::asio;
 using boost::asio::ip::udp;
 
-//const const_buffer EMPTY_BUFFER = buffer(null, 0);
-
-class NetworkBase {
+class NetworkBase : public cmn::CanLog {
 public:
-	NetworkBase(string name, unsigned int localPort) :
-		name(name), socket(netio, udp::endpoint(udp::v4(), localPort)) {}
+	NetworkBase(std::string name, unsigned int localPort) :
+		cmn::CanLog(name),
+		socket(netio, udp::endpoint(udp::v4(), localPort)) {}
 	~NetworkBase() {
 		if (!netio.stopped()) {
 			stop();
@@ -28,15 +28,11 @@ public:
 	}
 
 protected:
-	string name;
 	boost::asio::io_service netio;
 	udp::socket socket;
 	udp::endpoint currentEndpoint;
 	boost::array<byte, MAX_MESSAGE_SIZE> currentInput;
 
-	void log(string message) {
-		logger(name + ": " +message);
-	}
 	void listen();
 	virtual void handleReceive(const boost::system::error_code& error, size_t numBytes) = 0;
 	template <typename ConstBufferSequence>

@@ -1,12 +1,16 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 
+#include <thread>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/trivial.hpp>
 #include "protocol.h"
+#include "NetworkServer.h"
 
-
-using namespace std;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace mentics { namespace network {
@@ -26,6 +30,28 @@ namespace mentics { namespace network {
 TEST_CLASS(NetworkTest)
 {
 public:
+	TEST_CLASS_INITIALIZE(BeforeClass) {
+		auto sink = boost::log::add_file_log("unit-test.log");
+		sink->locked_backend()->auto_flush(true);
+		boost::log::core::get()->set_filter
+		(
+			boost::log::trivial::severity >= boost::log::trivial::trace
+		);
+		//boost::log::add_common_attributes();
+	}
+
+	TEST_METHOD(TestRetrySend) {
+		NetworkServer server(1111);
+		std::thread serverThread(&NetworkServer::start, &server);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		server.testTimer();
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+		server.stop();
+		serverThread.join();
+	}
+
 	TEST_METHOD(TestSerialize2) {
 		std::stringstream ss; // any stream can be used
 

@@ -7,12 +7,12 @@
 
 namespace mentics { namespace network {
 
-using namespace std;
+namespace asio = boost::asio;
 using boost::asio::ip::udp;
 
 class NetworkClient : public NetworkBase {
 public:
-	NetworkClient(string remoteHost, unsigned short remotePort) :
+	NetworkClient(std::string remoteHost, unsigned short remotePort) :
 		NetworkBase("Client", 0), // port 0 will allow OS to choose port
 		clientId(-1),
 		serverHost(remoteHost), serverPort(remotePort) {}
@@ -24,18 +24,18 @@ public:
 
 private:
 	ClientIdType clientId;
-	string serverHost;
+	std::string serverHost;
 	unsigned short serverPort;
 	udp::endpoint serverEndpoint;
 
 	void handleReceive(const boost::system::error_code& error, size_t numBytes) override;
 	void handleSubscribe(ClientIdType clientId);
-	void handleMessage(string message);
+	void handleMessage(std::string message);
 
 	void sendWithId(Command cmd);
-	void sendWithId(Command cmd, const const_buffer& buffers);
+	void sendWithId(Command cmd, const asio::const_buffer& buffers);
 
-	void sendMessage(string message);
+	void sendMessage(std::string message);
 
 	void sendSubscribe();
 };
