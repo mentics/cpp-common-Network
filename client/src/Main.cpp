@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
 {
 	try
 	{
-		mentics::network::NetworkClient client("localhost", 1111);
+		mentics::network::NetworkClient client("localhost", 1111, nullptr);
 		client.start();
 	}
 	catch (std::exception& e)

@@ -12,8 +12,7 @@ namespace lvl = boost::log::trivial;
 namespace asio = boost::asio;
 using boost::asio::ip::udp;
 
-void NetworkBase::listen()
-{
+void NetworkBase::listen() {
 	socket.async_receive_from(
 		asio::buffer(currentInput, MAX_MESSAGE_SIZE), currentEndpoint,
 		boost::bind(&NetworkBase::handleReceive, this,
@@ -22,12 +21,24 @@ void NetworkBase::listen()
 	LOG(lvl::info) << "Listening on port " << cmn::toString(socket.local_endpoint().port());
 }
 
-template <typename ConstBufferSequence>
-void NetworkBase::send(udp::endpoint& target, const Command cmd, const ConstBufferSequence& buffers) {
-	boost::array<asio::const_buffer, 2> bufs = { asio::buffer((byte*)(&cmd), 1), buffers };
-	socket.send_to(bufs, target);
+void NetworkBase::handleReceive(const boost::system::error_code& error, size_t numBytes) {
+	LOG(lvl::trace) << "handleReceive...";
+	if (!error) {
+		handler->handle(currentEndpoint, std::string(reinterpret_cast<char const*>(currentInput.data() + 1), numBytes - 1));
+	} else {
+		handler->handleError(currentEndpoint, error);
+	}
+	// TODO: if we get that "forcibly closed" error, we can remove that client--see example networklib code on github, maybe it does this
+
+	listen();
 }
-template void NetworkBase::send<asio::mutable_buffers_1>(udp::endpoint& target, const Command cmd, const asio::mutable_buffers_1& buffers);
-template void NetworkBase::send<asio::const_buffers_1>(udp::endpoint& target, const Command cmd, const asio::const_buffers_1& buffers);
+
+void NetworkBase::send(udp::endpoint& endpoint, NetworkMessage& item) {
+	MsgIdType netId = htonl(item.msgId);
+	boost::array<asio::const_buffer, 2> bufs = {
+		asio::buffer(&netId, sizeof(MsgIdType)), asio::buffer(item.data)
+	};
+	socket.send_to(bufs, endpoint);
+}
 
 }}

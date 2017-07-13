@@ -40,17 +40,17 @@ public:
 		//boost::log::add_common_attributes();
 	}
 
-	TEST_METHOD(TestRetrySend) {
-		NetworkServer server(1111);
-		std::thread serverThread(&NetworkServer::start, &server);
+	//TEST_METHOD(TestRetrySend) {
+	//	NetworkServer server(1111);
+	//	std::thread serverThread(&NetworkServer::start, &server);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		server.testTimer();
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	//	server.testTimer();
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-		server.stop();
-		serverThread.join();
-	}
+	//	server.stop();
+	//	serverThread.join();
+	//}
 
 	TEST_METHOD(TestSerialize2) {
 		std::stringstream ss; // any stream can be used
