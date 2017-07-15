@@ -150,7 +150,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\NetworkBase.h" />
-    <ClInclude Include="include\protocol.h" />
     <ClInclude Include="include\NetworkServer.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="include\targetver.h" />
@@ -160,6 +159,11 @@
     <ClCompile Include="src\NetworkServer.cpp" />
     <ClCompile Include="src\NetworkBase.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\Common.vcxproj">
+      <Project>{a1cea56a-2f14-4457-b2b1-bfb7c2c02c56}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

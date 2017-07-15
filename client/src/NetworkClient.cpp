@@ -36,10 +36,4 @@ void NetworkClient::run() {
 	LOG(lvl::info) << "NetworkClient stopped";
 }
 
-//void NetworkClient::handleSubscribe(ClientIdType cid) {
-//	clientId = cid;
-//	name.append(cmn::toString(clientId));
-//	LOG(lvl::info) << "Subscribe acknowledged with clientId=" << cmn::toString(clientId);
-//}
-
 }}

@@ -13,7 +13,6 @@
 #include <queue>
 
 #include "MenticsCommon.h"
-#include "protocol.h"
 
 namespace mentics { namespace network {
 
@@ -28,6 +27,11 @@ typedef ptime::ptime RealTimeType;
 typedef ptime::time_duration RealDurationType;
 typedef uint16_t CountType;
 typedef std::function<void(udp::endpoint, std::string)> MessageCallbackType;
+
+const int MAX_MESSAGE_SIZE = 1023;
+const boost::asio::ip::udp::endpoint NULL_ENDPOINT;
+
+enum Control : byte { AppLevel = 1, Ack = 2 };
 
 struct NetworkMessage {
 	RealTimeType nextRunTime;

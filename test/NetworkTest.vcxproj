@@ -170,9 +170,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TestClientServer.cpp" />
-    <ClCompile Include="TestStuff.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\common\Common.vcxproj">
+      <Project>{a1cea56a-2f14-4457-b2b1-bfb7c2c02c56}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\client\Client.vcxproj">
       <Project>{b0996450-991e-4f96-ba33-fc948fd90a78}</Project>
     </ProjectReference>

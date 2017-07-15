@@ -31,7 +31,7 @@ public:
 		boost::log::sources::severity_logger<boost::log::trivial::severity_level> lg;
 		const std::string name = "ClientServerTest";
 
-		try {
+		//try {
 		class ServerNetworkHandler : public NetworkHandler {
 			boost::log::sources::severity_logger<boost::log::trivial::severity_level> lg;
 			const std::string name = "ServerNetworkHandler";
@@ -92,12 +92,13 @@ public:
 
 		for (int i = 0; i < numClients; i++) {
 			clients[i]->stop();
+			delete clients[i];
 		}
 
 		server.stop();
-		} catch (const std::exception& ex) {
-			LOG(lvl::error) << ex.what();
-		}
+		//} catch (const std::exception& ex) {
+		//	LOG(lvl::error) << ex.what();
+		//}
 	}
 
 
