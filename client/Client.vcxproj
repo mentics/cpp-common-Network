@@ -161,7 +161,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\NetworkClient.cpp" />
-    <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -158,7 +158,6 @@
   <ItemGroup>
     <ClCompile Include="src\Common.cpp" />
     <ClCompile Include="src\NetworkServer.cpp" />
-    <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\NetworkBase.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
   </ItemGroup>

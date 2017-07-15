@@ -25,7 +25,8 @@ public:
 	explicit NetworkServer(unsigned short localPort, NetworkHandler* handler) :
 		NetworkBase("Server", localPort, handler) {}
 
-	void start() override;
+protected:
+	void run() override;
 
 private:
 	//unsigned short port;

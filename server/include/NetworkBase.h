@@ -1,5 +1,7 @@
 #pragma once
 
+//#define BOOST_ASIO_HAS_IOCP 1
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <string>
 #include <thread>
@@ -9,7 +11,6 @@
 #include <boost/lockfree/spsc_queue.hpp>
 #include <vector>
 #include <queue>
-#include <boost/log/trivial.hpp>
 
 #include "MenticsCommon.h"
 #include "protocol.h"
@@ -64,91 +65,74 @@ public:
 	virtual void handleError(udp::endpoint& endpoint, const boost::system::error_code& error) = 0;
 };
 
+
+// From: https://stackoverflow.com/questions/19467485/how-to-remove-element-not-at-top-from-priority-queue
+template<class T, class Container = vector<T>, class Compare = less<typename Container::value_type> >
+class PriorityQueue : public std::priority_queue<T, Container, Compare> {
+public:
+	PriorityQueue(const Compare& compare) : std::priority_queue<T, Container, Compare>(compare) {}
+//	bool remove(const T& value) {
+	template<class UnaryPredicate>
+	bool remove(UnaryPredicate predicate) {
+		auto it = std::find_if(this->c.begin(), this->c.end(), predicate);
+		if (it != this->c.end()) {
+			this->c.erase(it);
+			// TODO: next line unnecessary? test
+			std::make_heap(this->c.begin(), this->c.end(), this->comp);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+};
+
+
+// Crash on deadline_timer constructor: https://stackoverflow.com/questions/31520493/boostasioio-service-crash-in-win-mutex-lock
 class NetworkBase : public cmn::CanLog {
 public:
 	NetworkBase(std::string name, unsigned int localPort, NetworkHandler* handler) :
 		cmn::CanLog(name),
-		socket(netio, udp::endpoint(udp::v4(), localPort)),
-		thread(&NetworkBase::start, this),
+		inFlight(&NetworkMessage::compare),
+		netio(),
 		retryTimer(netio),
+		socket(netio, udp::endpoint(udp::v4(), localPort)),
 		handler(handler) {}
+
 	~NetworkBase() {
-		if (!netio.stopped()) {
-			stop();
-		}
+		stop();
 	}
 
-	virtual void start() = 0;
+	void start();
 
-	inline void submit(udp::endpoint endpoint, RealDurationType period, CountType retries,
-			std::string data, MessageCallbackType callback) {
-		// TODO: use ringbuffer instead of pointers?
-		NetworkMessage msg = { ptime::ptime(), period, retries, nextMsgId++, data, callback, endpoint };
-		incoming.push(msg);
-		// Wake up the timer to run right away
-		retryTimer.cancel();
-	}
+	void submit(udp::endpoint endpoint, RealDurationType period, CountType retries,
+		std::string data, MessageCallbackType callback);
 
-	inline void sendAndRetry() {
-		// TODO: we could combine messages into single send to optimize
-		// Have a batch at top of method that we add to, then at the end if it's not empty, send it.
-		ptime::ptime now = ptime::microsec_clock::universal_time();
-		LOG(lvl::trace) << "sendAndRetry at " << now;
-		while (!incoming.empty()) {
-			NetworkMessage message;
-			incoming.pop(message);
-			send(message.endpoint, message);
-			message.nextRunTime = now + message.period;
-			inFlight.push(message);
-		}
+	void sendAndRetry();
 
-		// TODO: update now?
-		ptime::ptime nextRetryTime;
-		while (!inFlight.empty()) {
-			NetworkMessage top = inFlight.top();
-			if (top.nextRunTime <= now) {
-				inFlight.pop();
-				if (top.retries <= 0) {
-					// TODO: call callback with no data indicating no ack
-				} else {
-					send(top.endpoint, top);
-					top.nextRunTime = now + top.period;
-					top.retries--;
-					inFlight.push(top);
-				}			} else {
-				break;
-			}
-		}
-		retryTimer.expires_at(nextRetryTime);
-		retryTimer.async_wait([this](const boost::system::error_code&) {
-			this->sendAndRetry();
-		});
-	}
-
-	void stop() {
-		netio.stop();
-		thread.join();
-	}
+	void stop();
 
 protected:
-	std::thread thread;
-	asio::deadline_timer retryTimer;
 	boost::asio::io_service netio;
+	asio::deadline_timer retryTimer;
 	udp::socket socket;
+	std::thread thread;
 	udp::endpoint currentEndpoint;
 	boost::array<byte, MAX_MESSAGE_SIZE> currentInput;
 	NetworkHandler* handler;
-	//std::function<void(udp::endpoint&, const std::string&)> handler;
-	//std::function<void(udp::endpoint&, const boost::system::error_code& error)> errorHandler;
-
 	MsgIdType nextMsgId = 1;
 	boost::lockfree::spsc_queue<NetworkMessage, boost::lockfree::capacity<1024>> incoming;
-	std::priority_queue<NetworkMessage, std::vector<NetworkMessage>, decltype(&NetworkMessage::compare)> inFlight;
+	PriorityQueue<NetworkMessage, std::vector<NetworkMessage>, decltype(&NetworkMessage::compare)> inFlight;
 
-	//virtual udp::endpoint endpointFor(NetworkMessage message) = 0;
+	void runOnce();
+	virtual void run() = 0;
 	void listen();
-	void send(udp::endpoint& target, NetworkMessage& item);
-	void handleReceive(const boost::system::error_code& error, size_t numBytes);
+
+	void handleReceive(const boost::system::error_code& error, const size_t numBytes);
+	void handleAck(const udp::endpoint& endpoint, const MsgIdType msgId);
+	void sendAck(const udp::endpoint& endpoint, const MsgIdType msgId);
+
+	void send(const udp::endpoint& target, const NetworkMessage& item);
 };
 
 }}

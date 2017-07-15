@@ -14,8 +14,8 @@ namespace lvl = boost::log::trivial;
 namespace asio = boost::asio;
 using boost::asio::ip::udp;
 
-void NetworkClient::start() {
-	LOG(lvl::info) << "Client starting...";
+void NetworkClient::run() {
+	LOG(lvl::info) << "starting...";
 	udp::resolver resolver(netio);
 	udp::resolver::query query(udp::v4(), serverHost, std::to_string(serverPort));
 	serverEndpoint = *resolver.resolve(query);
@@ -27,7 +27,7 @@ void NetworkClient::start() {
 			netio.run();
 		}
 		catch (const std::exception& e) {
-			LOG(lvl::error) << "Client: network exception: " << cmn::toString(e.what());
+			LOG(lvl::error) << "Network exception: " << cmn::toString(e.what());
 		}
 		catch (...) {
 			LOG(lvl::error) << "Unknown exception in client network thread";

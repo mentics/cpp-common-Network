@@ -14,7 +14,7 @@ const boost::asio::ip::udp::endpoint NULL_ENDPOINT;
 
 const int MAX_MESSAGE_SIZE = 1023;
 
-enum Command : byte { cmdSubscribe=1, cmdMessage=2, cmdCreateGame=4, cmdJoinGame=8, cmdAction=16 };
+enum Control : byte { AppLevel = 1, Ack = 2 };
 
 namespace mentics { namespace network {
 

@@ -21,7 +21,7 @@ struct Action {
 	Action(std::string newValue) : value(value) {}
 };
 
-void NetworkServer::start() {
+void NetworkServer::run() {
 	LOG(lvl::info) << "NetworkServer starting...";
 	listen();
 
