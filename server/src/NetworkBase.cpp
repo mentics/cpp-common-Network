@@ -33,13 +33,33 @@ void NetworkBase::listen() {
 	LOG(lvl::info) << "Listening on port " << cmn::toString(socket.local_endpoint().port());
 }
 
-// NOTE: runs in external thread
-void NetworkBase::submit(udp::endpoint endpoint, RealDurationType period, CountType retries,
-	std::string data, MessageCallbackType callback) {
-	NetworkMessage msg = { ptime::ptime(), period, retries, nextMsgId++, data, callback, endpoint };
+// NOTE: may run in external thread
+void NetworkBase::submit(const udp::endpoint& endpoint, RealDurationType period, CountType retries,
+		const std::string& data, const MessageCallbackType& callback) {
+	NetworkMessage msg = { ptime::ptime(), period, retries,
+		Control::NewMsg, nextMsgId++, data, callback, endpoint };
 	incoming.push(msg);
 	// Wake up the timer to run right away
-	retryTimer.cancel();
+	retryTimer.expires_from_now(ptime::seconds(0));
+	//retryTimer.cancel();
+}
+
+// NOTE: may run in external thread
+void NetworkBase::submitReply(const udp::endpoint& endpoint, RealDurationType period, CountType retries,
+	const std::string& data, const MessageCallbackType& callback, MsgIdType msgId) {
+	NetworkMessage msg = { ptime::ptime(), period, retries,
+		Control::Reply, msgId, data, callback, endpoint };
+	incoming.push(msg);
+	// Wake up the timer to run right away
+	retryTimer.expires_from_now(ptime::seconds(0));
+}
+
+void NetworkBase::submitAck(const udp::endpoint& endpoint, const MsgIdType msgId) {
+	NetworkMessage msg = { ptime::ptime(), ptime::millisec(200), 5,
+		Control::Ack, msgId, cmn::EMPTY_STRING, nullptr, endpoint };
+	incoming.push(msg);
+	// NOTE: we could send it right away and add and update expires at
+	retryTimer.expires_from_now(ptime::seconds(0));
 }
 
 void NetworkBase::sendAndRetry() {
@@ -94,32 +114,50 @@ void NetworkBase::sendAndRetry() {
 
 void NetworkBase::handleReceive(const boost::system::error_code& error, const size_t numBytes) {
 	LOG(lvl::trace) << "handleReceive...";
+	try {
 	if (!error) {
 		byte* raw = currentInput.data();
 		byte control = *raw;
 		MsgIdType msgId = ntohl(*(uint32_t*)(raw + 1));
-		if (control == Control::Ack) {
-			handleAck(currentEndpoint, msgId);
-		} else {
-			byte headerLen = 1 + sizeof(MsgIdType);
-			std::string data(reinterpret_cast<char const*>(currentInput.data() + headerLen), numBytes - headerLen);
-			handler->handle(currentEndpoint, data);
-			sendAck(currentEndpoint, msgId);
+		byte headerLen = 1 + sizeof(MsgIdType);
+		std::string data(reinterpret_cast<char const*>(currentInput.data() + headerLen), numBytes - headerLen);
+
+		if (control == Control::Ack || control == Control::Reply) {
+			handleAck(currentEndpoint, msgId, data);
+		}
+		if (control != Control::Ack) {
+			if (handler->handle(currentEndpoint, msgId, data)) {
+				submitAck(currentEndpoint, msgId);
+			}
 		}
 	} else {
 		handler->handleError(currentEndpoint, error);
 	}
 	// TODO: if we get that "forcibly closed" error, we can remove that client--see example networklib code on github, maybe it does this
-
+	} catch (const std::exception& ex) {
+		LOG(lvl::error) << "Exception during handleReceive handling: " << ex.what();
+	}
+	
 	listen();
 }
 
-void NetworkBase::handleAck(const udp::endpoint& endpoint, const MsgIdType msgId) {
-	LOG(lvl::trace) << "received ack and so removing " << msgId << " finding in " << inFlight.top().msgId;
+void NetworkBase::handleAck(const udp::endpoint& endpoint, const MsgIdType msgId, const std::string& data) {
+	LOG(lvl::trace) << "received ack or reply and so removing " << msgId;// << " finding in " << inFlight.top().msgId;
 	auto s = inFlight.size();
+	
+	//MessageCallbackType callback = nullptr;
 	inFlight.remove([msgId](const NetworkMessage& msg) {
-		return msgId == msg.msgId;
+		//inFlight.remove([msgId, &callback](const NetworkMessage& msg) {
+			if (msgId == msg.msgId) {
+			//callback = msg.callback;
+			return true;
+		}
+		return false;
 	});
+	//if (callback != nullptr) {
+	//	callback(endpoint, data);
+	//}
+
 	auto s2 = inFlight.size();
 	if (s == s2) {
 		LOG(lvl::error) << "could not remove message from inFlight";
@@ -128,20 +166,10 @@ void NetworkBase::handleAck(const udp::endpoint& endpoint, const MsgIdType msgId
 
 void NetworkBase::send(const udp::endpoint& endpoint, const NetworkMessage& item) {
 	LOG(lvl::trace) << "sending to " << endpoint.address().to_string() << " msgId=" << item.msgId;
-	byte control = Control::AppLevel;
+	BOOST_ASSERT(!endpoint.address().is_unspecified());
 	MsgIdType netId = htonl(item.msgId);
 	boost::array<asio::const_buffer, 3> bufs = {
-		asio::buffer(&control, 1), asio::buffer(&netId, sizeof(MsgIdType)), asio::buffer(item.data)
-	};
-	socket.send_to(bufs, endpoint);
-}
-
-void NetworkBase::sendAck(const udp::endpoint& endpoint, const MsgIdType msgId) {
-	LOG(lvl::trace) << "sending Ack to " << endpoint.address().to_string() << " for msgId=" << msgId;
-	byte control = Control::Ack;
-	MsgIdType netId = htonl(msgId);
-	boost::array<asio::const_buffer, 2> bufs = {
-		asio::buffer(&control, 1), asio::buffer(&netId, sizeof(MsgIdType))
+		asio::buffer(&item.control, 1), asio::buffer(&netId, sizeof(MsgIdType)), asio::buffer(item.data)
 	};
 	socket.send_to(bufs, endpoint);
 }

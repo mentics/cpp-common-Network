@@ -12,16 +12,21 @@ using boost::asio::ip::udp;
 
 class NetworkClient : public NetworkBase {
 public:
-	NetworkClient(std::string name, std::string remoteHost, unsigned short remotePort, NetworkHandler* handler) :
-		NetworkBase(name, 0, handler), // port 0 will allow OS to choose port
-		serverHost(remoteHost), serverPort(remotePort) {}
+	static udp::endpoint endpointFor(std::string remoteHost, unsigned short remotePort);
 
-	NetworkClient(std::string remoteHost, unsigned short remotePort, NetworkHandler* handler) :
-		NetworkBase("Client", 0, handler), // port 0 will allow OS to choose port
-		serverHost(remoteHost), serverPort(remotePort) {}
+	NetworkClient(std::string name, const udp::endpoint& serverEndpoint, NetworkHandler* handler) :
+		serverEndpoint(serverEndpoint),
+		NetworkBase(name, 0, handler) // port 0 will allow OS to choose port
+	{
+		BOOST_ASSERT(!this->serverEndpoint.address().is_unspecified());
+	}
+
+	NetworkClient(const udp::endpoint& endpoint, NetworkHandler* handler) :
+		NetworkClient("Client", endpoint, handler) {}
 
 	inline void submit(RealDurationType period, CountType retries,
 		std::string data, MessageCallbackType callback) {
+		BOOST_ASSERT(!serverEndpoint.address().is_unspecified());
 		NetworkBase::submit(serverEndpoint, period, retries, data, callback);
 	}
 
@@ -29,8 +34,6 @@ protected:
 	void run() override;
 
 private:
-	std::string serverHost;
-	unsigned short serverPort;
 	udp::endpoint serverEndpoint;
 };
 

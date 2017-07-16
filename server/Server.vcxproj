@@ -155,7 +155,6 @@
     <ClInclude Include="include\targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Common.cpp" />
     <ClCompile Include="src\NetworkServer.cpp" />
     <ClCompile Include="src\NetworkBase.cpp" />
     <ClCompile Include="src\stdafx.cpp" />

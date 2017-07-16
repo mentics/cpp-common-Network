@@ -36,8 +36,9 @@ public:
 			boost::log::sources::severity_logger<boost::log::trivial::severity_level> lg;
 			const std::string name = "ServerNetworkHandler";
 		public:
-			void handle(udp::endpoint& endpoint, const std::string& data) override {
+			bool handle(udp::endpoint& endpoint, MsgIdType msgId, const std::string& data) override {
 				LOG(lvl::trace) << "handle(" << endpoint << ", " << data << ")";
+				return true;
 			}
 			void handleError(udp::endpoint& endpoint, const boost::system::error_code& error) override {
 				LOG(lvl::trace) << "handleError(" << endpoint << ", " << error << ")";
@@ -48,8 +49,9 @@ public:
 			boost::log::sources::severity_logger<boost::log::trivial::severity_level> lg;
 			const std::string name = "ClientNetworkHandler";
 		public:
-			void handle(udp::endpoint& endpoint, const std::string& data) override {
+			bool handle(udp::endpoint& endpoint, MsgIdType msgId, const std::string& data) override {
 				LOG(lvl::trace) << "handle(" << endpoint << ", " << data << ")";
+				return true;
 			}
 			void handleError(udp::endpoint& endpoint, const boost::system::error_code& error) override {
 				LOG(lvl::trace) << "handleError(" << endpoint << ", " << error << ")";
@@ -66,7 +68,7 @@ public:
 		std::vector<NetworkClient*> clients;
 		for (int i = 0; i < numClients; i++) {
 			NetworkClient* c = new NetworkClient("Client"+ boost::lexical_cast<std::string>(i),
-				"localhost", 1111, &clientHandler);
+				NetworkClient::endpointFor("localhost", 1111), &clientHandler);
 			clients.push_back(c);
 			clients[i]->start();
 		}

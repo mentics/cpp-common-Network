@@ -1,7 +1,5 @@
 #pragma once
 
-//#define BOOST_ASIO_HAS_IOCP 1
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <string>
 #include <thread>
@@ -26,17 +24,19 @@ typedef uint32_t MsgIdType;
 typedef ptime::ptime RealTimeType;
 typedef ptime::time_duration RealDurationType;
 typedef uint16_t CountType;
-typedef std::function<void(udp::endpoint, std::string)> MessageCallbackType;
+typedef std::function<void(const udp::endpoint&, const std::string&)> MessageCallbackType;
 
 const int MAX_MESSAGE_SIZE = 1023;
 const boost::asio::ip::udp::endpoint NULL_ENDPOINT;
 
-enum Control : byte { AppLevel = 1, Ack = 2 };
+enum Control : byte { NewMsg = 1, Ack = 2, Reply = 3 };
 
 struct NetworkMessage {
 	RealTimeType nextRunTime;
 	RealDurationType period;
 	CountType retries;
+
+	Control control;
 	MsgIdType msgId;
 	std::string data;
 	MessageCallbackType callback;
@@ -65,7 +65,9 @@ struct NetworkMessage {
 
 class NetworkHandler {
 public:
-	virtual void handle(udp::endpoint& endpoint, const std::string& data) = 0;
+	// Returns true if network layer should send an Ack back.
+	// This is typically because no other response is needed so just send Ack.
+	virtual bool handle(udp::endpoint& endpoint, MsgIdType msgId, const std::string& data) = 0;
 	virtual void handleError(udp::endpoint& endpoint, const boost::system::error_code& error) = 0;
 };
 
@@ -75,14 +77,26 @@ template<class T, class Container = vector<T>, class Compare = less<typename Con
 class PriorityQueue : public std::priority_queue<T, Container, Compare> {
 public:
 	PriorityQueue(const Compare& compare) : std::priority_queue<T, Container, Compare>(compare) {}
-//	bool remove(const T& value) {
+
+	template<class UnaryPredicate>
+	bool find(UnaryPredicate predicate) {
+		auto it = std::find_if(this->c.begin(), this->c.end(), predicate);
+		if (it != this->c.end()) {
+			call(it);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
 	template<class UnaryPredicate>
 	bool remove(UnaryPredicate predicate) {
 		auto it = std::find_if(this->c.begin(), this->c.end(), predicate);
 		if (it != this->c.end()) {
 			this->c.erase(it);
 			// TODO: next line unnecessary? test
-			std::make_heap(this->c.begin(), this->c.end(), this->comp);
+			//std::make_heap(this->c.begin(), this->c.end(), this->comp);
 			return true;
 		}
 		else {
@@ -109,8 +123,10 @@ public:
 
 	void start();
 
-	void submit(udp::endpoint endpoint, RealDurationType period, CountType retries,
-		std::string data, MessageCallbackType callback);
+	void submit(const udp::endpoint& endpoint, RealDurationType period, CountType retries,
+		const std::string& data, const MessageCallbackType& callback);
+	void submitReply(const udp::endpoint& endpoint, RealDurationType period, CountType retries,
+		const std::string& data, const MessageCallbackType& callback, MsgIdType msgId);
 
 	void sendAndRetry();
 
@@ -132,11 +148,11 @@ protected:
 	virtual void run() = 0;
 	void listen();
 
-	void handleReceive(const boost::system::error_code& error, const size_t numBytes);
-	void handleAck(const udp::endpoint& endpoint, const MsgIdType msgId);
-	void sendAck(const udp::endpoint& endpoint, const MsgIdType msgId);
-
 	void send(const udp::endpoint& target, const NetworkMessage& item);
+	void submitAck(const udp::endpoint& endpoint, const MsgIdType msgId);
+
+	void handleReceive(const boost::system::error_code& error, const size_t numBytes);
+	void handleAck(const udp::endpoint& endpoint, const MsgIdType msgId, const std::string& data);
 };
 
 }}
