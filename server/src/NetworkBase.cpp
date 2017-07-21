@@ -148,7 +148,7 @@ void NetworkBase::handleAck(const udp::endpoint& endpoint, const MsgIdType msgId
 	//MessageCallbackType callback = nullptr;
 	inFlight.remove([msgId](const NetworkMessage& msg) {
 		//inFlight.remove([msgId, &callback](const NetworkMessage& msg) {
-			if (msgId == msg.msgId) {
+		if (msgId == msg.msgId) {
 			//callback = msg.callback;
 			return true;
 		}
