@@ -100,7 +100,8 @@ void NetworkBase::sendAndRetry() {
 				}
 				top.retries--;
 				inFlight.push(top);
-			}		}
+			}
+		}
 		else {
 			break;
 		}
