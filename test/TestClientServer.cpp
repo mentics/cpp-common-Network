@@ -90,7 +90,7 @@ public:
 		//	LOG(lvl::info) << "client callback for " << endpoint.address();
 		//});
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(5000000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 
 		for (int i = 0; i < numClients; i++) {
 			clients[i]->stop();
