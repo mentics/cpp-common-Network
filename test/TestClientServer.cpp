@@ -20,7 +20,6 @@ namespace mentics { namespace network {
 
 TEST_CLASS(ClientServerTest)
 {
-
 public:
 	TEST_CLASS_INITIALIZE(BeforeClass) {
 		mentics::test::setupLog();
@@ -90,7 +89,7 @@ public:
 		//	LOG(lvl::info) << "client callback for " << endpoint.address();
 		//});
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
 		for (int i = 0; i < numClients; i++) {
 			clients[i]->stop();
